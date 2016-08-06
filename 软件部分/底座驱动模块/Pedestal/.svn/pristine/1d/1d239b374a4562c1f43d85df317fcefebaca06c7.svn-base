@@ -1,0 +1,56 @@
+#include "Base.h"
+
+//以下为底座电机相关IO口及初始化
+int DC_IN1[4] = {A0,A2,7,12};
+int DC_IN2[4] = {A1,A3,8,13};			//经试验验证，模拟口可以直接给出high low
+int DC_ENABLE[4] = {3,9,10,11};		//不使用5,6端口是因为其占空比会略大
+int Encoder_PIN[4] = {2,4,5,6};		//经试验验证，只有数字端口可以测量脉冲
+Base Base(DC_IN1, DC_IN2, DC_ENABLE, Encoder_PIN);
+
+int* parameters;		//该数组用于保留通讯中接受到的参数。
+
+void setup()
+{
+	Serial.begin(9600);
+	while (!Serial) {
+		; // wait for serial port to connect. Needed for native USB port only
+	}
+	Serial.println("Start");
+  /* add setup code here */
+
+}
+
+void loop()
+{
+	if (Serial.available()>0)
+	{
+
+		Serial.println("recieved");
+		String Str=Serial.readString();
+		
+		
+		//int Speed = Str.toInt();
+		
+		
+		parameters
+ = Base.splitcommand(Str, ';', 3);
+
+		Base.Walk(parameters[0], parameters[1], parameters[2]);
+		for (int i = 0; i < 3; i++)
+		{
+			Serial.println(parameters[i]);
+		}
+		/*
+		int pwm = Base._DCMotorA_Positive.DC_Control(CW, Speed);
+		int mea_speed = Base._DCMotorA_Positive.Read_Speed();
+		Serial.println("controlled");
+		
+		Serial.print("pwm=");
+		Serial.println(pwm);
+		Serial.print("mea_speed=");
+		Serial.println(mea_speed);
+		*/
+	}
+  /* add main program code here */
+
+}

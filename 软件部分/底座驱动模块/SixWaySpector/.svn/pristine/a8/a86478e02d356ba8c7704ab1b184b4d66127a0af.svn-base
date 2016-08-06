@@ -1,0 +1,209 @@
+//#include "Aruino.h" 
+#include "Infrared.h"
+
+
+#ifdef DEBUG
+#define DBG(message)    Serial.print(message)
+#define DBGW(message)    Serial.write(message)
+#else
+#define DBG(message)
+#define DBGW(message)
+#endif // DEBUG
+
+
+Infrared::Infrared(int* pin)
+{
+	
+	for (int i = 0; i < 9; i++){
+		_pin[i] = pin[i];
+		pinMode(_pin[i], INPUT);
+	}
+	Coordinate_A=0;
+	Coordinate_B=0;
+}
+
+void Infrared::Read_status()
+{
+	for(int i=0;i<9;i++){
+		_status[i]=digitalRead(_pin[i]);
+	}
+}
+
+int Infrared::Detect_Offset(int direction)
+{
+	Direction=direction;
+	int Offset;
+	Read_status();
+	if (_status[8]!=White)
+	{
+		Offset = OffCentral;
+		return Offset;
+	}
+	switch (direction){
+		case A_Forward:
+			if ((_status[0] == White) && (_status[1] == Black) && (_status[2] == White) && (_status[3] == Black)){
+				Offset=B_Negative;
+			}
+			else if ((_status[1] == White) && (_status[0] == Black) && (_status[3] == White) && (_status[2] == Black)){
+				Offset=B_Positive;
+			}
+			/*
+			else if ((_status[1] == Black) && (_status[0] == Black)&&(_status[3] == Black) && (_status[2] == Black)){
+				Offset=OffCentral;
+			}*/else{
+				Offset=NoneOffset;
+			}
+
+			break;
+		
+		case A_Backward:
+			if ((_status[0] == White) && (_status[1] == Black) && (_status[2] == White) && (_status[3] == Black)){
+				Offset = B_Negative;
+			}
+			else if ((_status[1] == White) && (_status[0] == Black) && (_status[3] == White) && (_status[2] == Black)){
+				Offset = B_Positive;
+			}
+			/*
+			else if ((_status[1] == Black) && (_status[0] == Black)&&(_status[3] == Black) && (_status[2] == Black)){
+			Offset=OffCentral;
+			}*/
+			else{
+				Offset = NoneOffset;
+			}
+
+			break;
+
+		case B_Forward:
+			if ((_status[4] == White) && (_status[5] == Black) && (_status[6] == White) && (_status[7] == Black)){
+				Offset=A_Negative;
+			}
+			else if ((_status[5] == White) && (_status[4] == Black) && (_status[7] == White) && (_status[6] == Black)){
+				Offset=A_Positive;
+			}
+			/*
+			else if ((_status[1] == Black) && (_status[0] == Black)&&(_status[3] == Black) && (_status[2] == Black)){
+			Offset=OffCentral;
+			}*/
+			else{
+				Offset=NoneOffset;
+			}
+
+			break;
+
+		case B_Backward:
+			if ((_status[4] == White) && (_status[5] == Black) && (_status[6] == White) && (_status[7] == Black)){
+				Offset = A_Negative;
+			}
+			else if ((_status[5] == White) && (_status[4] == Black) && (_status[7] == White) && (_status[6] == Black)){
+				Offset = A_Positive;
+			}
+			/*
+			else if ((_status[1] == Black) && (_status[0] == Black)&&(_status[3] == Black) && (_status[2] == Black)){
+			Offset=OffCentral;
+			}*/
+			else{
+				Offset = NoneOffset;
+			}
+
+			break;
+
+		default:
+			Offset=-1;
+			break;
+	}
+
+	return Offset;
+}
+
+int	Infrared::Detect_Bias(int direction){
+	Direction = direction;
+	int Bias;
+	Read_status();
+	if (_status[8] != White)
+	{
+		Bias = OffBias;
+		return Bias;
+	}
+	switch (direction){
+	case A_Forward:
+		if ((_status[0] == White) && (_status[1] == Black) && (_status[3] == White) && (_status[2] == Black)){
+			Bias = CW;
+		}
+		else if ((_status[1] == White) && (_status[0] == Black) && (_status[2] == White) && (_status[3] == Black)){
+			Bias = CCW;
+		}
+		/*
+		else if ((_status[1] == Black) && (_status[0] == Black)&&(_status[3] == Black) && (_status[2] == Black)){
+		Offset=OffCentral;
+		}*/else{
+			Bias = NoneBias;
+		}
+
+		break;
+
+	case A_Backward:
+		if ((_status[0] == White) && (_status[1] == Black) && (_status[3] == White) && (_status[2] == Black)){
+			Bias = CW;
+		}
+		else if ((_status[1] == White) && (_status[0] == Black) && (_status[2] == White) && (_status[3] == Black)){
+			Bias = CCW;
+		}
+		/*
+		else if ((_status[1] == Black) && (_status[0] == Black)&&(_status[3] == Black) && (_status[2] == Black)){
+		Offset=OffCentral;
+		}*/else{
+			Bias = NoneBias;
+		}
+
+		break;
+
+	case B_Forward:
+		if ((_status[4] == White) && (_status[5] == Black) && (_status[7] == White) && (_status[6] == Black)){
+			Bias = CCW;
+		}
+		else if ((_status[5] == White) && (_status[4] == Black) && (_status[6] == White) && (_status[7] == Black)){
+			Bias = CW;
+		}
+		/*
+		else if ((_status[1] == Black) && (_status[0] == Black)&&(_status[3] == Black) && (_status[2] == Black)){
+		Offset=OffCentral;
+		}*/
+		else{
+			Bias = NoneBias;
+		}
+
+		break;
+
+	case B_Backward:
+		if ((_status[4] == White) && (_status[5] == Black) && (_status[7] == White) && (_status[6] == Black)){
+			Bias = CCW;
+		}
+		else if ((_status[5] == White) && (_status[4] == Black) && (_status[6] == White) && (_status[7] == Black)){
+			Bias = CW;
+		}
+		/*
+		else if ((_status[1] == Black) && (_status[0] == Black)&&(_status[3] == Black) && (_status[2] == Black)){
+		Offset=OffCentral;
+		}*/
+		else{
+			Bias = NoneBias;
+		}
+		break;
+
+	default:
+		Bias = -1;
+		break;
+	}
+
+
+}
+
+
+boolean Infrared::Detect_Cross(){
+	Read_status();
+	if ((_status[0] || _status[1]) && (_status[2] || _status[3]) && (_status[4] || _status[5]) && (_status[6] || _status[7])&&_status[8]){
+		return true;
+	}
+}
+
+

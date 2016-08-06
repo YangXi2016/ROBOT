@@ -1,0 +1,89 @@
+#include "Communication.h"
+#include "Arduino.h"
+int* splitcommand(String command, char flag, int length){
+	int i;
+	String parameter;
+	int parameters[3] = { -1, -1, -1 };
+	int commaPosition;
+	for (i = 0; i < length - 1; i++)
+	{
+		commaPosition = command.indexOf(flag);
+		if (commaPosition == -1){
+			parameters[i] = -1;
+			break;
+		}
+
+		parameter = command.substring(0, commaPosition);
+		Serial.println(parameter);
+		command = command.substring(commaPosition + 1, command.length());
+		
+		parameters[i] = parameter.toInt();
+		Serial.println(parameters[i]);
+		Serial.println(command);
+	}
+	parameters[length - 1] = command.toInt();
+
+	return parameters;
+}
+
+int* IICcommand(String command, char flag, int length){
+	int i;
+	String parameter;
+	int parameters[3] = { -1, -1, -1 };
+	int commaPosition;
+	for (i = 0; i < length - 1; i++)
+	{
+		commaPosition = command.indexOf(flag);
+		if (commaPosition == -1){
+			parameters[i] = -1;
+			break;
+		}
+
+		parameter = command.substring(0, commaPosition);
+		Serial.println(parameter);
+		command = command.substring(commaPosition + 1, command.length());
+
+		parameters[i] = parameter.toInt();
+		Serial.println(parameters[i]);
+		Serial.println(command);
+	}
+	parameters[length - 1] = command.toInt();
+
+	return parameters;
+}
+
+void Send_Direct(int Adress, int Direct){
+	Wire.beginTransmission(Adress); // transmit to device
+	Wire.write(Direct);
+	Wire.endTransmission();    // stop transmitting
+}
+
+
+String	Read_Status(int Adress, int bytes){
+	String cmd = "";
+
+	Wire.requestFrom(Adress, bytes);
+
+	while (Wire.available()) { // slave may send less than requested
+		char c = Wire.read(); // receive a byte as character
+		cmd += c;
+	}
+	return cmd;
+}
+
+/*
+void get_parameters(int Adress, int bytes){
+	Wire.requestFrom(Adress, bytes);
+	int i=0;
+	while (Wire.available()) { // slave may send less than requested
+		if (i == 0){
+			status = Wire.read();
+		}
+		if (i == 2){
+			info = Wire.read();
+		}
+		i++;
+	}
+
+}
+*/

@@ -1,0 +1,75 @@
+
+#ifndef Infrared_h
+#define Infrared_h
+
+//#include <inttypes.h>
+#include <Arduino.h>
+
+/******************************************************************************
+* Definitions
+******************************************************************************/
+//The position of the Infrared
+//[        5 B+ 4         ]
+//[2                	 0]
+//[A-		 9	 		A+]
+//[3					 1]
+//[		   7 B- 6		  ]
+//
+//define the Direction of Robot
+#define A_Forward	1
+#define A_Backward	2
+#define B_Forward	3
+#define B_Backward	4
+//define the offset of Robot
+//the offset is the paralle offset
+#define NoneOffset	0
+#define A_Positive	1
+#define A_Negative	2
+#define B_Positive	3
+#define B_Negative	4
+#define OffCentral	5
+
+//the bias of direction
+#define NoneBias 0		//不偏不倚
+#define CW	1 			//顺时针
+#define CCW 2			//逆时针
+#define OffBias	3		
+
+//define the status of Infrared
+#define White		1
+#define Black		0
+
+//#define Recodes_Time	5
+class Infrared
+{
+private:
+	
+
+public:
+	int 	_pin[9];
+	boolean	_status[9];							//八路巡线模块状态+中心一个
+	int 	Direction;							//前进方向
+	//int 	Offset
+	int 	Coordinate_A,Coordinate_B;			//场地坐标。
+
+	Infrared(int* pin);						//初始化函数 
+	void	Read_status();						//检测并得到巡线状态
+
+	int		Detect_Offset(int direction);		//根据状态给出水平偏移判断
+	int		Detect_Bias(int direction);			//根据状态给出偏斜方向判断
+
+	boolean	Detect_Cross();						//判断是否到达十字路口
+	int		Coordinate_Count(int direction);	//持续运行。记录当前的坐标
+
+};
+
+// Arduino 0012 workaround
+#undef int
+#undef char
+#undef long
+#undef byte
+#undef float
+#undef abs
+#undef round
+
+#endif

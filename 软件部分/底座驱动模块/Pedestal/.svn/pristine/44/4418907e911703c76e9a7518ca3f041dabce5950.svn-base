@@ -1,0 +1,41 @@
+#include "Communication.h"
+
+int* splitcommand(String command, char flag, int length){
+	int i;
+	String parameter;
+	int parameters[5];
+	int commaPosition;
+	for (i = 0; i < length - 1; i++)
+	{
+		commaPosition = command.indexOf(flag);
+		if (commaPosition == -1){
+			parameters[i] = -1;
+			break;
+		}
+
+		parameter = command.substring(0, commaPosition);
+		command = command.substring(commaPosition + 1, command.length());
+		parameters[i] = parameter.toInt();
+	}
+	parameters[length - 1] = command.toInt();
+
+	return parameters;
+}
+
+void Send_Direct(int Adress, int Direct){
+	Wire.beginTransmission(Adress); // transmit to device
+	Wire.write(Direct);
+	Wire.endTransmission();    // stop transmitting
+}
+
+String	Read_Status(int Adress, int bytes){
+	String cmd = "";
+
+	Wire.requestFrom(Adress, bytes);
+
+	while (Wire.available()) { // slave may send less than requested
+		char c = Wire.read(); // receive a byte as character
+		cmd += c;
+	}
+	return cmd;
+}

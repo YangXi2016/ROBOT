@@ -1,0 +1,35 @@
+#include "infrared.h"
+//#include "Base.h"
+int pin[8] = { 2, 3, 4, 5, 6, 7, 8, 9 };
+int direction = A_Forward;
+Infrared Infrared(pin);
+void setup()
+{
+	Serial.begin(9600);
+	while (!Serial) {
+		; // wait for serial port to connect. Needed for native USB port only
+	}
+	Serial.println("Start");
+
+	//Serial.println("init");
+}
+
+void loop()
+{
+	Infrared.Read_status();									//读取巡线模块状态
+	int Offset = Infrared.Detect_Offset(direction);			//判断机身偏移情况
+	/*巡线模块debug
+	if (Serial.available() > 0){
+	Serial.readString();
+	Serial.println("data update");
+	Serial.println(Offset);
+	for (int i = 0; i < 8; i++){
+	Serial.print(Infrared._pin[i]);
+	Serial.print("    ");
+	Serial.println(Infrared._status[i]);
+	}
+	}
+	*/
+	/* add main program code here */
+
+}

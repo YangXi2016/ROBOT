@@ -1,0 +1,197 @@
+
+#include "include/Base.h"
+
+//调试中待定参数
+#define	LineSpeed		600				//直线行走速度
+
+//以下为底座电机相关IO口及初始化
+int DC_IN1[4] = { A0, A2, 7, 12 };
+int DC_IN2[4] = { A1, A3, 8, 13 };			//经试验验证，模拟口可以直接给出high low
+int DC_ENABLE[4] = { 3, 9, 10, 11 };		//不使用5,6端口是因为其占空比会略大
+int Encoder_PIN[4] = { 2, 4, 5, 6 };		//经试验验证，只有数字端口可以测量脉冲
+Base Base(DC_IN1, DC_IN2, DC_ENABLE, Encoder_PIN);
+
+
+//通讯相关
+String	cmd;			//串口通讯中接受的命令
+int* parameters;		//该数组用于保留与上位机通讯中接受到的参数。
+int* IICParameters;
+int  back_direct = 0;			//该标志位用于表明是否需要后退及后退方向。
+
+
+#define DEBUG
+
+#ifdef DEBUG
+#define DBG(message)    Serial.println(message)
+#define DBGW(message)    Serial.write(message)
+#else
+#define DBG(message)
+#define DBGW(message)
+#endif // DEBUG
+
+void setup()
+{
+	Wire.begin();        // join i2c bus (address optional for master)
+
+	Serial.begin(9600);
+	while (!Serial) {
+		; // wait for serial port to connect. Needed for native USB port only
+	}
+	DBG("Start");
+	/* add setup code here */
+
+}
+
+void loop()
+{
+	if (Serial.available() > 0){
+
+		cmd = Serial.readString();
+		Serial.println(cmd);
+
+		Base.splitcommand(cmd, ';', 3);
+		//DBG("收到控制信息");
+		DBG("recieve control info");
+
+		//调整到十字路口
+		if (back_direct != 0){
+			Base.Direction_Reverse();
+			//DBG("因之前回退了一小格，先掉头");
+			DBG("Because step back just now, so turn back first");
+			Base.AdjustForFetch(Base.Direction);
+		}
+
+		Base.GoalA = Base.parameters[0];
+		Base.GoalB = Base.parameters[1];
+		back_direct = Base.parameters[2];
+		DBG(Base.GoalA);
+		DBG(Base.GoalB);
+		DBG(back_direct);
+
+
+		/*以下为走到指定坐标*/
+		while ((Base.RobotA != Base.GoalA) || (Base.RobotB != Base.GoalB))
+		{
+
+
+			Base.Walk(Base.Direction, LineSpeed);
+			//从十字路口出发前：想微调到十字路口中心
+			DBG("before leaving,Adjust to cross");
+			while (1)
+			{
+
+				cmd = Read_Status(Slave_Adress, IIC_Bytes);
+				cmd.substring(0, IIC_Bytes);
+				//DBG("读取从IIC总线上传来的Spector的状态信息");
+				DBG("read the status info from Spector through IIC");
+				DBG(cmd);
+
+				Base.splitcommand(cmd, ';', 3);
+
+				DBG(cmd.length());
+
+				/*
+				Wire.requestFrom(Slave_Adress, IIC_Bytes);
+				int i = 0;
+				while (Wire.available()) { // slave may send less than requested
+				parameters[0] = Wire.read()-48;
+				Wire.read();
+				parameters[1] = Wire.read()-48;
+				Wire.read();
+				Wire.read();
+				Wire.read();
+				Wire.read();
+				}
+				*/
+				DBG(Base.parameters[0]);
+				DBG(Base.parameters[1]);
+				DBG("Begin Ajustment");
+				//DBG("开始微调");
+				if (Base.parameters[0] == Status_Done){
+					Base.Walk(0);
+					//DBG("在十字路口正中央,调整结束");
+					DBG("has arrived the cross, ajustment end");
+					break;
+				}
+				else if (Base.parameters[0] == Status_Bias){
+					Base.Basic_Rotate(parameters[1]);
+					//DBG("方向偏离，正在微调");
+					DBG("direction has bias,adjust");
+
+				}
+				else if (Base.parameters[0] == Status_Offset){
+					Base.Basic_Walk(parameters[1]);
+					//DBG("行驶轨迹侧偏，正在微调");
+					DBG("steer path has offset,adjust");
+				}
+			}
+
+			Base.Direction = Base.Detect_Direct();				//确定方向
+			//DBG("确定行驶方向");
+			DBG("determine steer direction");
+
+			Base.OffCross(Base.Direction);
+			//DBG("冲出十字路口");
+			DBG("rush off the cross");
+
+			Base.Walk(Base.Direction, LineSpeed);
+			//DBG("直线行驶+巡线");
+			DBG("line steer and line patrol");
+			while (1)
+			{
+				cmd = Read_Status(Slave_Adress, IIC_Bytes);
+
+				DBG(cmd);
+
+				parameters = splitcommand(cmd, ';', 2);
+				if (parameters[0] == Status_Done){
+					Base.Walk(0);
+					//DBG("在十字路口正中央,调整结束");
+					DBG("has arrived the cross, line_patrol end");
+					break;
+				}
+
+				else if (Base.parameters[0] == Status_Bias){
+					Base.Basic_Rotate(parameters[1]);
+					//DBG("方向偏离，正在微调");
+					DBG("direction has bias,adjust");
+
+				}
+				else if (Base.parameters[0] == Status_Offset){
+					Base.Basic_Walk(parameters[1]);
+					//DBG("行驶轨迹侧偏，正在微调");
+					DBG("steer path has offset,adjust");
+				}
+
+			}
+
+			Base.Coord_Chage();
+			//DBG("坐标更新");
+			DBG("Coord has updated");
+		}
+
+		DBG("has arrived at goal");
+
+		//是否需要抓取货物？
+		if (back_direct != 0)
+		{
+			Base.AdjustForFetch(back_direct);
+			//DBG("为抓取货物做调整");
+			DBG("Adjust For Fetch");
+
+			Base.Direction = back_direct;
+
+			//DBG("行驶方向更新");
+			DBG("steer direction has updated");
+
+			
+			//while (Serial.available() <= 0);			//等待上位机的下一个坐标
+
+		}
+
+		Serial.println("1");
+
+	}
+
+
+}

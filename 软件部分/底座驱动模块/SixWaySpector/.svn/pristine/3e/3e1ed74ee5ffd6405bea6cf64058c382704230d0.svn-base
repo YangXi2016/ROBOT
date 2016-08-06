@@ -1,0 +1,46 @@
+
+#ifndef Infrared_h
+#define Infrared_h
+
+//#include <inttypes.h>
+#include <Arduino.h>
+#include "Communication.h"	
+
+//define the status of Infrared
+#define White		1
+#define Black		0
+
+//#define Recodes_Time	5
+class Infrared
+{
+private:
+	
+
+public:
+	int 	_pin[9];
+	boolean	_status[9];							//八路巡线模块状态+中心一个(中心一个根据电压模拟值来判断)
+	int 	Direction;							//前进方向
+	//int 	Offset
+	int 	Coordinate_A,Coordinate_B;			//场地坐标。
+
+	Infrared(int* pin);						//初始化函数 
+	void	Read_status();						//检测并得到巡线状态
+
+	int		Detect_Offset(int direction);		//根据状态给出水平偏移判断
+	int		Detect_Bias(int direction);			//根据状态给出偏斜方向判断
+
+	boolean	Detect_Cross();						//判断是否到达十字路口
+	int		Coordinate_Count(int direction);	//持续运行。记录当前的坐标
+
+};
+
+// Arduino 0012 workaround
+#undef int
+#undef char
+#undef long
+#undef byte
+#undef float
+#undef abs
+#undef round
+
+#endif
